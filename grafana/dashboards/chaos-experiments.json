@@ -1,0 +1,103 @@
+{
+  "__inputs": [],
+  "__requires": [],
+  "annotations": { "list": [] },
+  "description": "ResilienceOS Chaos Experiment View - active experiments and impact visualization",
+  "editable": true,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "Active Chaos Experiments",
+      "type": "stat",
+      "targets": [{ "expr": "chaos_agent_active_experiments", "legendFormat": "Active" }]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "percentunit" },
+        "overrides": []
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 4 },
+      "id": 2,
+      "options": {
+        "legend": { "calcs": ["max", "mean"], "displayMode": "table", "placement": "right" },
+        "tooltip": { "mode": "multi" }
+      },
+      "title": "Error Rate During Chaos Experiments",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "api_gateway_error_rate", "legendFormat": "api-gateway" },
+        { "expr": "user_service_error_rate", "legendFormat": "user-service" },
+        { "expr": "product_service_error_rate", "legendFormat": "product-service" },
+        { "expr": "order_service_error_rate", "legendFormat": "order-service" },
+        { "expr": "notification_service_error_rate", "legendFormat": "notification-service" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "ms" },
+        "overrides": []
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 14 },
+      "id": 3,
+      "options": {
+        "legend": { "calcs": ["max", "mean"], "displayMode": "table", "placement": "right" },
+        "tooltip": { "mode": "multi" }
+      },
+      "title": "Latency Spike During Chaos (P99 ms)",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "api_gateway_p99_latency_ms", "legendFormat": "api-gateway p99" },
+        { "expr": "user_service_p99_latency_ms", "legendFormat": "user-service p99" },
+        { "expr": "product_service_p99_latency_ms", "legendFormat": "product-service p99" },
+        { "expr": "order_service_p99_latency_ms", "legendFormat": "order-service p99" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "s" },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 24 },
+      "id": 4,
+      "options": { "legend": { "displayMode": "list" }, "tooltip": { "mode": "multi" } },
+      "title": "Service Uptime (Chaos Active = Uptime Stops Growing)",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "api_gateway_uptime_seconds", "legendFormat": "api-gateway" },
+        { "expr": "user_service_uptime_seconds", "legendFormat": "user-service" },
+        { "expr": "product_service_uptime_seconds", "legendFormat": "product-service" },
+        { "expr": "order_service_uptime_seconds", "legendFormat": "order-service" }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "tags": ["resilienceos", "chaos", "experiments"],
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "ResilienceOS - Chaos Experiment View",
+  "uid": "resilienceos-chaos",
+  "version": 1
+}

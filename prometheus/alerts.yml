@@ -1,0 +1,65 @@
+groups:
+  - name: resilienceos_alerts
+    interval: 10s
+    rules:
+      - alert: HighErrorRate
+        expr: >
+          api_gateway_error_rate > 0.1 or
+          user_service_error_rate > 0.1 or
+          product_service_error_rate > 0.1 or
+          order_service_error_rate > 0.1 or
+          notification_service_error_rate > 0.1
+        for: 15s
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+          description: "A service has error rate above 10%"
+
+      - alert: CriticalErrorRate
+        expr: >
+          api_gateway_error_rate > 0.5 or
+          user_service_error_rate > 0.5 or
+          product_service_error_rate > 0.5 or
+          order_service_error_rate > 0.5
+        for: 10s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical error rate detected"
+          description: "A core service has error rate above 50%"
+
+      - alert: HighLatency
+        expr: >
+          api_gateway_p99_latency_ms > 1000 or
+          user_service_p99_latency_ms > 1000 or
+          product_service_p99_latency_ms > 1000 or
+          order_service_p99_latency_ms > 1000
+        for: 20s
+        labels:
+          severity: warning
+        annotations:
+          summary: "P99 latency above 1 second"
+          description: "A service P99 latency has exceeded 1000ms"
+
+      - alert: ServiceDown
+        expr: >
+          absent(api_gateway_uptime_seconds) or
+          absent(user_service_uptime_seconds) or
+          absent(product_service_uptime_seconds) or
+          absent(order_service_uptime_seconds)
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service appears to be down"
+          description: "A service has not reported metrics for 30 seconds"
+
+      - alert: ChaosExperimentActive
+        expr: chaos_agent_active_experiments > 0
+        for: 0s
+        labels:
+          severity: info
+        annotations:
+          summary: "Chaos experiment in progress"
+          description: "One or more chaos experiments are currently running"

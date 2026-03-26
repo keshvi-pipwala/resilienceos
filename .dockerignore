@@ -1,0 +1,29 @@
+# Git
+.git
+.gitignore
+
+# Python cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.coverage
+htmlcov
+
+# Node (frontend is built in its own Dockerfile stage)
+frontend/node_modules
+frontend/build
+frontend/.env.local
+frontend/.env.production
+
+# Dev files
+.env
+*.log
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+
+# Test artifacts (not needed in production image)
+# Note: tests/ directory IS included so pytest can run inside container if needed

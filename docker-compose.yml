@@ -1,0 +1,222 @@
+version: "3.9"
+
+x-service-defaults: &service-defaults
+  build:
+    context: .
+    dockerfile: Dockerfile.service
+  env_file: .env
+  networks:
+    - resilienceos
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    networks: [resilienceos]
+    environment:
+      POSTGRES_USER: resilience
+      POSTGRES_PASSWORD: resilience
+      POSTGRES_DB: resilienceos
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U resilience -d resilienceos"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    networks: [resilienceos]
+    command: redis-server --port 6380
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "6380", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: on-failure
+
+  prometheus:
+    image: prom/prometheus:v2.50.1
+    networks: [resilienceos]
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    ports: ["19090:9090"]
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:10.3.1
+    networks: [resilienceos]
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+      GF_DEFAULT_THEME: dark
+      GF_SERVER_HTTP_PORT: "3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports: ["13030:3000"]
+    depends_on: [prometheus]
+    restart: unless-stopped
+
+  db-seed:
+    <<: *service-defaults
+    command: python postgres/seed.py
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: "no"
+
+  api-gateway:
+    <<: *service-defaults
+    command: uvicorn services.api_gateway.main:app --host 0.0.0.0 --port 8000 --workers 1
+    ports: ["18000:8000"]
+    environment:
+      USER_SERVICE_URL: http://user-service:8001
+      PRODUCT_SERVICE_URL: http://product-service:8002
+      ORDER_SERVICE_URL: http://order-service:8003
+      NOTIFICATION_SERVICE_URL: http://notification-service:8004
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      db-seed: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  user-service:
+    <<: *service-defaults
+    command: uvicorn services.user_service.main:app --host 0.0.0.0 --port 8001 --workers 1
+    ports: ["18001:8001"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      db-seed: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8001/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  product-service:
+    <<: *service-defaults
+    command: uvicorn services.product_service.main:app --host 0.0.0.0 --port 8002 --workers 1
+    ports: ["18002:8002"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      db-seed: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8002/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  order-service:
+    <<: *service-defaults
+    command: uvicorn services.order_service.main:app --host 0.0.0.0 --port 8003 --workers 1
+    ports: ["18003:8003"]
+    environment:
+      USER_SERVICE_URL: http://user-service:8001
+      PRODUCT_SERVICE_URL: http://product-service:8002
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      db-seed: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8003/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  notification-service:
+    <<: *service-defaults
+    command: uvicorn services.notification_service.main:app --host 0.0.0.0 --port 8004 --workers 1
+    ports: ["18004:8004"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      db-seed: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8004/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  chaos-agent:
+    <<: *service-defaults
+    command: uvicorn chaos_agent.main:app --host 0.0.0.0 --port 8010 --workers 1
+    ports: ["18010:8010"]
+    environment:
+      API_GATEWAY_URL: http://api-gateway:8000
+      USER_SERVICE_URL: http://user-service:8001
+      PRODUCT_SERVICE_URL: http://product-service:8002
+      ORDER_SERVICE_URL: http://order-service:8003
+      NOTIFICATION_SERVICE_URL: http://notification-service:8004
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      db-seed: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8010/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  control-plane:
+    <<: *service-defaults
+    command: uvicorn control_plane.main:app --host 0.0.0.0 --port 9000 --workers 1
+    ports: ["19000:9000"]
+    environment:
+      API_GATEWAY_URL: http://api-gateway:8000
+      USER_SERVICE_URL: http://user-service:8001
+      PRODUCT_SERVICE_URL: http://product-service:8002
+      ORDER_SERVICE_URL: http://order-service:8003
+      NOTIFICATION_SERVICE_URL: http://notification-service:8004
+      CHAOS_AGENT_URL: http://chaos-agent:8010
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      db-seed: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        REACT_APP_API_URL: http://localhost:19000
+        REACT_APP_WS_URL: ws://localhost:19000
+        REACT_APP_GRAFANA_URL: http://localhost:13030
+    networks: [resilienceos]
+    ports: ["13031:3001"]
+    depends_on: [control-plane]
+    restart: unless-stopped
+
+networks:
+  resilienceos:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  prometheus_data:
+  grafana_data:

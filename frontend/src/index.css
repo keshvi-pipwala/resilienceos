@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --navy-950: #020408;
+  --navy-900: #060d1a;
+  --navy-800: #0a1628;
+  --navy-700: #0f2040;
+  --electric: #3b9eff;
+  --electric-dim: #1a7fe0;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--navy-950);
+  color: #e2e8f0;
+  font-family: "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--navy-900);
+}
+::-webkit-scrollbar-thumb {
+  background: #2a4a7a;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--electric-dim);
+}
+
+.font-mono {
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+}
+
+/* Pulse ring for chaos nodes */
+@keyframes ping-slow {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+.chaos-pulse::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: currentColor;
+  animation: ping-slow 1.5s ease-out infinite;
+  opacity: 0;
+}
+
+/* Gradient border utility */
+.gradient-border {
+  background: linear-gradient(var(--navy-800), var(--navy-800)) padding-box,
+              linear-gradient(135deg, #3b9eff30, #3b9eff08) border-box;
+  border: 1px solid transparent;
+}
+
+/* Traffic flow animation on D3 edges */
+@keyframes flow {
+  0% { stroke-dashoffset: 20; }
+  100% { stroke-dashoffset: 0; }
+}
+.flow-line {
+  stroke-dasharray: 6 4;
+  animation: flow 0.8s linear infinite;
+}
+
+/* Status badge colors */
+.badge-healthy { background: #16532420; color: #22c55e; border: 1px solid #22c55e40; }
+.badge-degraded { background: #78350f20; color: #f59e0b; border: 1px solid #f59e0b40; }
+.badge-unhealthy { background: #7f1d1d20; color: #ef4444; border: 1px solid #ef444440; }
+.badge-unreachable { background: #1e293b20; color: #94a3b8; border: 1px solid #94a3b840; }
+
+.badge-p0 { background: #7f1d1d30; color: #ef4444; border: 1px solid #ef444450; }
+.badge-p1 { background: #78350f30; color: #f97316; border: 1px solid #f9731650; }
+.badge-p2 { background: #713f1230; color: #f59e0b; border: 1px solid #f59e0b50; }
+.badge-p3 { background: #16532430; color: #22c55e; border: 1px solid #22c55e50; }
+
+/* Card hover effect */
+.card-hover {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.card-hover:hover {
+  border-color: #3b9eff40;
+  box-shadow: 0 0 20px #3b9eff10;
+}
