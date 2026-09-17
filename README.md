@@ -1,5 +1,8 @@
 # ResilienceOS
 
+> 🟢 **Interactive demo (no install):** https://keshvi-pipwala.github.io/resilienceos/ — runs the same pipeline shape in your browser. Full stack: see setup below.
+
+
 **Distributed Systems Chaos & Recovery Simulator**
 
 A production-grade chaos engineering platform that deploys a realistic microservices architecture, injects real failures into running services, observes how the system degrades in real time, and automatically generates structured AI-written post-mortem reports.
