@@ -394,3 +394,13 @@ pytest tests/test_integration.py::TestRealCascadeFailure::test_user_service_erro
 | TestScenarioRunner | 4 | All 3 named scenarios start; invalid scenario returns 400 |
 | TestAPIGatewayProxy | 4 | Gateway proxies all routes; circuit breakers visible |
 | TestDataIntegrity | 3 | Price calculation, user CRUD, duplicate rejection |
+
+---
+
+## What the tests prove
+
+53 integration tests across 13 test classes cover the five fault types (latency, errors, partitions, resource exhaustion, service kills) and the three named scenarios (Cascade Failure, Slow Death, Split Brain). Each scenario's test asserts the *observable* outcome — which services degrade, in what order, and whether circuit breakers open — not just that the fault was injected. If the post-mortem generator says "the Order service cascaded from Product," the test suite is what makes that sentence checkable.
+
+## Authorship
+
+Experiment surface, scenario definitions, the post-mortem spec (what an SRE write-up must explain to be useful), and the acceptance suite are mine. The 5 microservices + control plane + chaos agent were AI-assisted under my direction. — Keshvi Pipwala
